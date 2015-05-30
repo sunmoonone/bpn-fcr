@@ -23,13 +23,9 @@ from math import exp
 from random import uniform
 
 class Neuron(object):
-    """
-    Neuron object
-    """
     def __init__(self, num_inputs):
         """
-        Create a new neuron
-        @param num_inputs: number of inputs
+        @param num_inputs: 输入次数，用以计算权值个数
         """
         self.activation = 0
         self.bias = -1
@@ -41,12 +37,13 @@ class Neuron(object):
         self._init_weights(num_inputs)
 
     def _init_weights(self, num_inputs):
+        """初始化权值
+        """
         self.threshold = uniform(-1, 1)
-        self.weights = [uniform(-1, 1) for i in xrange(num_inputs)]
+        self.weights = [uniform(-1, 1) for _ in xrange(num_inputs)]
 
     def adjust_weights(self, inputs, learning_rate):
-        """
-        Adjust the weights
+        """调整权值,学习阶段根据误差调整权值
         @param inputs: a list() or tuple() representing inputs
         @param learning_rate: learning rate
         """
@@ -57,8 +54,7 @@ class Neuron(object):
             self.last_weight_step[i] = self.weights[i] - current_weight
 
     def feed(self, inputs):
-        """
-        Feed the neuron with inputs
+        """处理输入
         @param inputs: a list() or tuple() representing inputs
         """
         self.activation = 0
@@ -67,8 +63,7 @@ class Neuron(object):
         self.activation += self.bias * self.threshold
 
     def output(self):
-        """
-        Get the output for the neuron
+        """获取该神经元的输出结果
         @return: float number
         """
         return 1 / (1 + exp(-self.activation))

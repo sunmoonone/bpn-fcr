@@ -23,17 +23,15 @@ from bpnn.neuron import Neuron
 
 class Network(object):
     """
-    Back propagation neural network
+        前向反馈神经网络
     """
     def __init__(self, num_inputs, num_h_neurons, num_o_neurons,
                  learning_rate = 0.1):
-        """
-        Create a back propagation neural network
-        @param num_inputs: number of input neurons
-        @param num_h_neurons: number of hidden neurons
-        @param num_o_neurons: number of output neurons
-        @param learning_rate: learning rate of the network
-        @return: bpnn.network.Network instance
+        """初始化设置
+        @param num_inputs: 输入层神经元数量
+        @param num_h_neurons: 隐藏层神经元数量
+        @param num_o_neurons: 输出层神经元数量
+        @param learning_rate: 学习速率
         """
         self.h_layer = self._new_layer(num_h_neurons, num_inputs)
         self.o_layer = self._new_layer(num_o_neurons, num_h_neurons)
@@ -42,31 +40,33 @@ class Network(object):
         self.error = 0
 
     def _new_layer(self, num_neurons, num_inputs):
-        return [Neuron(num_inputs) for i in xrange(num_neurons)]
+        """创建向量
+        """
+        return [Neuron(num_inputs) for _ in xrange(num_neurons)]
 
     def feed(self, inputs):
-        """
-        Feed the neural network with a list of inputs.
+        """传递输入向量
         @param inputs: a list or tuple containing inputs
         """
         h_outputs = []
         for neuron in self.h_layer:
+            #各个神经元计算激活状态
             neuron.feed(inputs)
+            #产生该层的输出
             h_outputs.append(neuron.output())
 
         for neuron in self.o_layer:
+            #输出层计算激活状态
             neuron.feed(h_outputs)
 
     def output(self):
-        """
-        Get the status of the output neuron layer as list
+        """输出结果向量
         @return: a list() containing the value of the output neurons.
         """
         return [neuron.output() for neuron in self.o_layer]
 
     def test(self, inputs):
-        """
-        Feed the network and get the output.
+        """使用该网络进行识别
 
         This method is simply feed() followed by output().
 
@@ -77,11 +77,10 @@ class Network(object):
         return self.output()
 
     def train(self, inputs, target):
-        """
-        Train the neural network
-        @param inputs: a list or tuple containing inputs
-        @param target: a list() containing the value of the output neurons.
-        @return: current error of the network for that input
+        """训练该网络
+        @param inputs: 样本集
+        @param target: 预期结果集
+        @return: 针对当前结果集的误差
         """
         self.feed(inputs)
         for i in xrange(len(self.o_layer)):

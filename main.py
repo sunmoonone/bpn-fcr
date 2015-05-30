@@ -5,5 +5,5 @@
 
 
 if __name__ == '__main__':
-    from bpnn import test_xor,test_bindec
-    test_bindec()
+    from fire.train import train_fire_recognition
+    train_fire_recognition()

@@ -14,9 +14,10 @@ img_h=30
 
 def prepare():
     print 'preparing images in dir:%s' % download_dir
-    for parent,_,files in os.walk(download_dir):
-        for f in files:
-            imgtool.split_then_save(ospath.join(parent,f),splited_dir, img_w,img_h)
+    for f in os.listdir(download_dir):
+        f=ospath.join(download_dir,f)
+        if(ospath.isfile(f)):
+            imgtool.split_then_save(f,splited_dir, img_w,img_h)
             
         print 'preparing images done to dir:%s' % splited_dir
 

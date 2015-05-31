@@ -19,7 +19,8 @@ if __name__ == '__main__':
     cmd = sys.argv[1]
     
     if(cmd == 'prepare'):
-        pass
+        from fire.prepare import prepare
+        sys.exit(prepare())
     
     elif(cmd == 'train'):
         from fire.train import train_fire_recognition

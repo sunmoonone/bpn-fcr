@@ -7,7 +7,7 @@ import os
 import os.path as ospath
 import imgtool
 
-download_dir='../download'
+download_dir='images/origin'
 splited_dir='images/splited'
 img_w=30
 img_h=30

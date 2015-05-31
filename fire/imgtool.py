@@ -5,11 +5,37 @@ experiment on image manipulating
 import Image
 import os.path as ospath
 from math import sqrt
+from PIL import ImageFilter
 
-def split(imgfile,width,height,patch=True):
+def split(imgfile,img_w,img_h,patch=True):
     """分割图片，如果尺寸不够分割，则使用附近区域进行补充
     """
-    pass
+    im = Image.open(imgfile)
+    w,h=im.size
+    left,upper=0,0
+    right = left+img_w 
+    lower = upper+img_h
+    while(right <= w or lower <= h):
+        if(right > w):
+            right = w
+            left = w - img_w
+            
+        if(lower > h):
+            lower = h
+            upper = h - img_h
+    
+        box=(left,upper,right,lower)
+        yield im.crop(box)
+        left = right
+        if(left >= w):
+            #next row
+            left = 0
+            upper = lower
+            lower = upper+img_h
+            if(upper>= h):
+                return
+        #end if 
+        right = left+img_w
 
 file_no=1
 def split_then_save(imgfile,dest_dir, img_w, img_h):
@@ -37,18 +63,42 @@ def split_then_save(imgfile,dest_dir, img_w, img_h):
         
 
 
-#灰度
+def gray_scale(img):
+    """转换为灰度图像
+    """
+    return img.convert('L')
 
-#二值化
+def median_filter(img):
+    """中值滤波
+    """
+    return img.filter(ImageFilter.MedianFilter)
 
-#中值滤波
+def gaussian_filter(img):
+    """高斯滤波
+    """
+    return img.filter(ImageFilter.GaussianBlur)
 
-#圆形度
+def detect_edge(img):
+    """获取轮廓
+    """
+    return img.filter(ImageFilter.FIND_EDGES)
 
-#输出向量
+def detect_fire():
+    """最大类间方差法分离火焰与背景图像
+    """
 
-#缩小
+def detect_color(img,color, threshhold):
+    """阀值取色
+    @param img: pil image object
+    @param color: rgb tuple
+    @param threshhold: an integer value
+    """
+    pass
 
+def calc_shape(img):
+    """计算区域形状
+    """
+    pass
 
 class memoized(object):
     """
@@ -63,7 +113,8 @@ class memoized(object):
         try:
             if 'cacheable' in kwargs and kwargs['cacheable'] != True:
                 raise TypeError('') # Dummy hack
-
+            if(self.cache.has_key(args)):
+                print 'get img data from cache'
             return self.cache[args]
         except KeyError:
             self.cache[args] = value = self.func(*args)
@@ -76,14 +127,15 @@ class memoized(object):
 
 
 @memoized
-def check_receptor(imgfile,img_pixels, pixels):
+def check_receptor(img,img_pixels, pixels):
     """
     Prepare the input of the neural network
     @param img: a PIL.Image at size (img_pixels, img_pixels)
     @return: a list() that should be used to feed your neural network
     """
-    img =Image.open(imgfile)
-    print 'image info:' ,img.format, img.size, img.mode
+    if(isinstance(img, (basestring))):
+        img =Image.open(img)
+    
     raw = img.load()
     receptor_states = [0] * (pixels * pixels)
 

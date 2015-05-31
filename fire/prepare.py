@@ -21,4 +21,15 @@ def prepare():
             
         print 'preparing images done to dir:%s' % splited_dir
 
+def preprocess():
+    """图像预处理
+    预处理步骤:
+    1.去噪
+    2.阀值取色,生成一个局部图像
+    3.锐化增强
+    4.将得到的局部图像缩放到一个固定的大小
+    5.返回缩放后的图片
+    """
+    pass
+
 

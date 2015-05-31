@@ -5,7 +5,7 @@ experiment on image manipulating
 import Image
 import os.path as ospath
 from math import sqrt
-from PIL import ImageFilter
+from PIL import ImageFilter,ImageEnhance
 
 def split(imgfile,img_w,img_h,patch=True):
     """分割图片，如果尺寸不够分割，则使用附近区域进行补充
@@ -77,6 +77,10 @@ def gaussian_filter(img):
     """高斯滤波
     """
     return img.filter(ImageFilter.GaussianBlur)
+
+def enhance(img,factor):
+    enhancer = ImageEnhance.Sharpness(img)
+    enhancer.enhance(factor)
 
 def detect_edge(img):
     """获取轮廓

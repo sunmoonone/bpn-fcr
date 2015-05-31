@@ -23,6 +23,8 @@ network_persist_file='fcr.pkl'
 
 
 def train_fire_recognition():
+    """训练火焰识别
+    """
     input_len = PIXELS * PIXELS
     train_set = get_train_set()
     print 'building network (%s,%s,%s)' %(input_len, input_len/3, 1)

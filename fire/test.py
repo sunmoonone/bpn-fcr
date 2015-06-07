@@ -13,6 +13,17 @@ from fire import imgtool
 import train
 source_dir = 'images/origin'
 
+def test_file(imgfile):
+    with open(train.network_persist_file,'r') as f:
+        net= cPickle.load(f)
+    for img in imgtool.split(imgfile, train.IMG_PIXELS, train.IMG_PIXELS):
+        inp = imgtool.check_receptor(img, train.IMG_PIXELS, train.PIXELS)
+        out = net.test(inp)
+        out = out[0]
+        if(out > 0.5):
+            return 'danger'
+    return 'safe'
+
 def test():
     """
     """

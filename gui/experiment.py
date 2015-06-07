@@ -13,7 +13,6 @@ from fire.ostu import ostu_capture
 
 class Experiment(object):
     '''图片处理试验
-    
     '''
 
     def __init__(self):
@@ -27,7 +26,7 @@ class Experiment(object):
         self.scale=DoubleVar(uiparent,value=0)
         self.enhance_factor=DoubleVar(uiparent,value=0)
         self.threshold=IntVar(uiparent,value=100)
-        self.colortodetect=StringVar(uiparent)
+        self.colortodetect=StringVar(uiparent,'#ffa879')
         
         leftframe=Frame(uiparent)
         leftframe.config(width=300,height=500)
@@ -82,13 +81,12 @@ class Experiment(object):
         row.pack(side=TOP, fill=X)
         Button(row,text='类间方差分割',command=self.ostu_process).pack(expand=YES,fill=X,side=TOP,pady=10)
         Button(row, text='手动颜色分割',command=self.color_detect_process).pack(side=LEFT)
-        Label(row,width='4',text=' 范围:').pack(side=LEFT,padx=2)
+        Label(row,width='4',text=' 阈值:').pack(side=LEFT,padx=2)
         ent = Spinbox(row,width=10,from_=0,to=255,increment=1,textvariable=self.threshold)
         ent.pack(side=LEFT,padx=2)
 
         Label(row,width='4',text=' 颜色:').pack(side=LEFT,padx=2)
         ent = Entry(row,textvariable=self.colortodetect)
-        ent.insert(0, '#ff0000')
         ent.pack(side=RIGHT,expand=YES,fill=X,padx=2)
         
         row=Frame(leftframe)

@@ -11,7 +11,37 @@ from Image import ANTIALIAS
 def openimg(path):
     return Image.open(path)
 
-def split(imgfile,img_w,img_h,patch=True):
+
+def split(im,img_w,img_h,patch=True):
+    """分割图片，如果尺寸不够分割，则使用附近区域进行补充
+    """
+    w,h=im.size
+    left,upper=0,0
+    right = left+img_w 
+    lower = upper+img_h
+    while(right <= w or lower <= h):
+        if(right > w):
+            right = w
+            left = w - img_w
+            
+        if(lower > h):
+            lower = h
+            upper = h - img_h
+    
+        box=(left,upper,right,lower)
+        yield im.crop(box)
+        left = right
+        if(left >= w):
+            #next row
+            left = 0
+            upper = lower
+            lower = upper+img_h
+            if(upper>= h):
+                return
+        #end if 
+        right = left+img_w
+        
+def split_imgfile(imgfile,img_w,img_h,patch=True):
     """分割图片，如果尺寸不够分割，则使用附近区域进行补充
     """
     im = Image.open(imgfile)
@@ -109,19 +139,47 @@ def detect_color(img, target, threshold):
     @param threshold: an integer value
     """
     raw = img.load()
+#     print list(img.getdata())
     w,h= img.size
+    rimg =  Image.new('RGB', (w,h))
      
     for x in xrange(0, w):
         for y in xrange(0,h):
             color = raw[x,y]
-            dis= abs(color[0]-target[0]) +  abs(color[1]-target[1]) +  abs(color[1]-target[1]) 
+            if(color == 0):
+                continue
+            
+            dis= abs(color[0]-target[0]) +  abs(color[1]-target[1]) +  abs(color[2]-target[2]) 
             if dis < threshold:
-                pass
+                rimg.putpixel((x,y),(255,255,255))
 #                 raw[x,y]=255
             else:
-                raw[x,y]=0
-    return img
-            
+                pass
+#                 raw[x,y]=(0,0,0)
+    return rimg     
+
+
+def all_balck(img, ignore=10):
+    raw = img.load()
+    w,h= img.size
+    count=0
+    try: 
+        for x in xrange(0, w):
+            for y in xrange(0,h):
+                color = raw[x,y]
+                if(color ==0):
+                    continue
+                if isinstance(color, int):
+                    count = count+1
+                if color[0]!=0 or color[1]!=0 or color[2]!=0:
+                    count = count+1
+    except TypeError:
+        print type(color),color
+    
+    if(count<=ignore):
+        return True
+    else:
+        return False
 
 def calc_shape(img):
     """计算区域形状
@@ -229,6 +287,7 @@ def check_receptor(img,img_pixels, pixels):
         receptor_states = map(lambda x: x / imax, receptor_states)
 
     return receptor_states
+
 
 
 

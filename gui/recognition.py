@@ -12,6 +12,7 @@ from fire.imgtool import openimg, median_filter, gray_scale, enhance,\
 from fire.ostu import ostu_capture
 from tkFileDialog import askdirectory
 import ttk
+from threading import Thread
 
 
 class Recognition(object):
@@ -26,11 +27,12 @@ class Recognition(object):
         
     def make_ui(self,uiparent):
         self.which=IntVar(uiparent,value=0)
-        self.scale=DoubleVar(uiparent,value=0)
-        self.enhance_factor=DoubleVar(uiparent,value=0)
+        self.colortodetect=StringVar(uiparent,'#ffa879')
+        self.threshold=IntVar(uiparent,value=40)
         self.result_dir=StringVar(uiparent)
-        self.croppixels=StringVar(uiparent)
+        self.croppixels=StringVar(uiparent,'50')
         self.origin_dir=StringVar(uiparent)
+        self.testret=StringVar(uiparent,'识别结果:')
         
         leftframe=Frame(uiparent)
         leftframe.config(width=300,height=500)
@@ -58,25 +60,36 @@ class Recognition(object):
         row.pack(side=TOP, fill=X)
         Button(row,text='素材目录:',command=self.open_dir).pack(side=LEFT)
         ent=Entry(row,textvariable=self.origin_dir)
-        ent.pack(side=LEFT,fill=X,padx=5)
+        ent.pack(side=LEFT,expand=YES,fill=X,padx=5)
 
         row=LabelFrame(leftframe,text='批量预处理',padx=20,pady=20)
         row.pack(side=TOP,fill=X)
         
         row1=Frame(row)
         row1.pack(side=TOP,expand=YES,fill=X)
-        Label(row1,text='处理结果目录:').pack(side=LEFT,padx=2)
-        ent = Entry(row1,textvariable=self.result_dir)
+        Label(row1,text='结果目录:').pack(side=LEFT,padx=2)
+        ent = Entry(row1,state='readonly',textvariable=self.result_dir)
         ent.pack(side=RIGHT,expand=YES,fill=X,padx=2)
  
         row1=Frame(row)
         row1.pack(side=TOP,expand=YES,fill=X,pady=10)
         Label(row1,text='切块尺寸:').pack(side=LEFT,padx=2)
-        self.croppixels.set('50x50')
+        
         ent = Entry(row1,textvariable=self.croppixels)
         ent.pack(side=RIGHT,expand=YES,fill=X,padx=2)
         
-        Button(row,text='执行预处理',command=self.begin_preprocess).pack(expand=YES,fill=X,side=TOP,pady=10)
+        row1=Frame(row)
+        row1.pack(side=TOP,expand=YES,fill=X,pady=10)
+        Label(row1,text='颜色分割阈值:').pack(side=LEFT,padx=2)
+        ent = Spinbox(row1,width=10,from_=0,to=255,increment=1,textvariable=self.threshold)
+        ent.pack(side=LEFT,padx=2)
+
+        Label(row1,text=' 颜色:').pack(side=LEFT,padx=2)
+        ent = Entry(row1,textvariable=self.colortodetect)
+        ent.pack(side=RIGHT,fill=X,padx=2)
+        
+        
+        Button(row,text='执行预处理',fg="blue",command=self.begin_preprocess).pack(expand=YES,fill=X,side=TOP,pady=10)
         self.prebar = ttk.Progressbar(row,mode='indeterminate')
         self.prebar.pack(side=TOP,fill=X)
         
@@ -84,53 +97,111 @@ class Recognition(object):
         
         row=LabelFrame(leftframe,text='训练',padx=20,pady=20)
         row.pack(side=TOP, fill=X)
-        Button(row,text='开始训练',command=self.begin_train).pack(expand=YES,fill=X,side=TOP,pady=10)
+        Button(row,text='开始训练',fg="blue",command=self.begin_train).pack(expand=YES,fill=X,side=TOP,pady=10)
         self.trainbar = ttk.Progressbar(row,mode='indeterminate')
         self.trainbar.pack(side=TOP,fill=X)
 
         row=Frame(leftframe)
         row.config(pady=20)
         row.pack(side=TOP, fill=X)
-        Button(row,text='打开图片',command=self.gray_process).pack(expand=YES,fill=X,side=LEFT)
-        Button(row,text='识别',command=self.gray_process).pack(expand=YES,fill=X,side=LEFT)
+        Button(row,text='打开图片',command=self.open_image).pack(expand=YES,fill=X,side=LEFT)
+        Button(row,text='识别',fg="blue",command=self.do_recog).pack(expand=YES,fill=X,side=LEFT)
         row=Frame(leftframe)
         row.config(pady=10)
         row.pack(side=TOP, fill=X)
-        Label(row,text='识别结果:').pack(side=LEFT)
+        Label(row,textvariable=self.testret).pack(side=LEFT)
 
     def begin_preprocess(self):
+        dim = self.croppixels.get()
+        w=dim
+        w=int(w)
+        h=w
+        if(not w or not h):
+            self.alert('请输入正确的切块尺寸')
+            return
+        if(not self.origin_dir.get()):
+            self.alert('请设置素材目录')
+            return
+        sc = self.colortodetect.get()
+        c=None
+        try:
+            c = ImageColor.getrgb(sc)
+        except:
+            pass
+        
+        if not c: 
+            self.alert('请设置正确的颜色')
+            return
+        
         self.prebar.start(10)
-    
+        from fire.prepare import batch_preprocess
+        Thread(target=batch_preprocess,
+               args=(self.origin_dir.get(), self.result_dir.get(),w,h,self.threshold.get(),c,
+                     self.on_preprocess)
+               ).start()
+    def on_preprocess(self):
+        self.prebar.stop()
+#         self.alert('批量预处理完成,请人工复选教材图片')
+         
     def begin_train(self):
+        if not self.result_dir.get():
+            return self.alert('请先进行预处理准备教材图片')
+        c=len(os.listdir(self.result_dir.get()))
+        if c<3:
+            return self.alert('请先进行预处理准备教材图片')
+        dim = self.croppixels.get()
+        w=dim
+        w=int(w)
+        h=w
+        if(not w or not h):
+            self.alert('请输入正确的切块尺寸')
+            return
+        
+        sc = self.colortodetect.get()
+        c=None
+        try:
+            c = ImageColor.getrgb(sc)
+        except:
+            pass
+        
+        if not c: 
+            self.alert('请设置正确的颜色')
+            return
         self.trainbar.start(10)
-        pass
-    
-    def median_process(self):
-        img = self._open_img()
-        if not img:return
-            
-        img = median_filter(img)
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
-            
-    def gaussian_process(self):
-        img = self._open_img()
-        if not img:return
-            
-        img = gaussian_filter(img)
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
-
-    def ostu_process(self):
-        img = self._open_img()
-        if not img:return
-            
-        img = ostu_capture(img,True)
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
+        from fire.prepare import train_fire_recognition
+        Thread(target=train_fire_recognition,
+               args=( self.result_dir.get(),w,h,
+                     self.on_train)
+               ).start()
+               
+    def on_train(self):
+        self.trainbar.stop()
+        
+    def do_recog(self):
+        if not self.lastup_file:
+            return self.alert('请打开一个要识别的图片')
+        
+        dim = self.croppixels.get()
+        w=dim
+        w=int(w)
+        h=w
+        if(not w or not h):
+            self.alert('请输入正确的切块尺寸')
+            return
+        
+        sc = self.colortodetect.get()
+        c=None
+        try:
+            c = ImageColor.getrgb(sc)
+        except:
+            pass
+        
+        if not c: 
+            self.alert('请设置正确的颜色')
+            return
+        from fire.prepare import test
+        result = test(self.lastup_file,w,h,self.threshold.get(),c)
+        self.testret.set('识别结果:%s' % result)
     
     def _open_img(self):
         if(not self.lastup_file):
@@ -144,56 +215,7 @@ class Recognition(object):
         else:
             return openimg(self.lastdown_file)
 
-    def color_detect_process(self):
-        sc = self.colortodetect.get()
-        c=None
-        try:
-            c = ImageColor.getrgb(sc)
-        except:
-            pass
-        
-        if not c: 
-            self.alert('请设置正确的颜色')
-        th = self.threshold.get()
-        img = self._open_img()
-        img = detect_color(img,c,th)
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
-        
-    def gray_process(self):
-        img = self._open_img()
-        if not img:return
-            
-        img = gray_scale(img)
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
-            
-    def enhance_process(self):
-        img = self._open_img()
-        if not img:return
-            
-        img = enhance(img,self.enhance_factor.get())
-        print self.enhance_factor.get()
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
     
-    scaling=False
-    def do_scale(self,scale):
-        if(self.scaling):return
-        scale=float(scale)
-        if scale==0:return
-        img = self._open_img()
-        if not img:return
-        self.scaling=True
-        img = scale_img(img,scale)
-        path= self.tmpfile(self.lastup_file)
-        img.save(path,'JPEG')
-        self.update_photo(path)
-        self.scaling=False
-            
     def tmpfile(self,path):
         dt = os.path.join(os.curdir,'tmp')
         if not os.path.exists(dt):

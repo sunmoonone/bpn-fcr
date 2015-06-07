@@ -6,6 +6,10 @@ import Image
 import os.path as ospath
 from math import sqrt
 from PIL import ImageFilter,ImageEnhance
+from Image import ANTIALIAS
+
+def openimg(path):
+    return Image.open(path)
 
 def split(imgfile,img_w,img_h,patch=True):
     """分割图片，如果尺寸不够分割，则使用附近区域进行补充
@@ -78,9 +82,9 @@ def gaussian_filter(img):
     """
     return img.filter(ImageFilter.GaussianBlur)
 
-def enhance(img,factor):
+def enhance(img,factor=0.7):
     enhancer = ImageEnhance.Sharpness(img)
-    enhancer.enhance(factor)
+    return enhancer.enhance(factor)
 
 def detect_edge(img):
     """获取轮廓
@@ -90,19 +94,77 @@ def detect_edge(img):
 def detect_fire():
     """最大类间方差法分离火焰与背景图像
     """
+def scale_img(img,scale):
+    w,h = img.size
+    w= int(w*scale if scale>=0 else w/abs(scale))
+    h= int (h*scale if scale>=0 else h/abs(scale))
+    if w==0:w=1
+    if h==0:h=1
+    return img.resize((w,h),resample=ANTIALIAS)
 
-def detect_color(img,color, threshhold):
-    """阀值取色
+def detect_color(img, target, threshold):
+    """阈值取色:根据颜色范围
     @param img: pil image object
-    @param color: rgb tuple
-    @param threshhold: an integer value
+    @param target: rgb tuple
+    @param threshold: an integer value
     """
-    pass
+    raw = img.load()
+    w,h= img.size
+     
+    for x in xrange(0, w):
+        for y in xrange(0,h):
+            color = raw[x,y]
+            dis= abs(color[0]-target[0]) +  abs(color[1]-target[1]) +  abs(color[1]-target[1]) 
+            if dis < threshold:
+                pass
+#                 raw[x,y]=255
+            else:
+                raw[x,y]=0
+    return img
+            
 
 def calc_shape(img):
     """计算区域形状
     """
     pass
+
+def sobel_sharp(image):  #sobel算子
+    SobelX = [-1,0,1,-2,0,2,-1,0,1]
+    SobelY = [-1,-2,-1,0,0,0,1,2,1]
+    image = sharp(image,SobelX,SobelY)
+    return image
+
+def prewitt_sharp(image):#perwit算子
+    PrewittX = [1,0,-1,1,0,-1,1,0,-1]
+    PrewittY = [-1,-1,-1,0,0,0,1,1,1]
+    image = sharp(image,PrewittX,PrewittY)
+    return image
+    
+def isotropic_sharp(image):#isotropic算子
+    IsotropicX = [1,0,-1,1.414,0,-1.414,1,0,-1]
+    IsotropicY = [-1,-1.414,-1,0,0,0,1,1.414,1]
+    image = sharp(image,IsotropicX,IsotropicY)
+    return image
+    
+def sharp(image,arrayX,arrayY):
+    w = image.size[0]
+    h = image.size[1]
+    size = (w,h)
+
+    iSharpImage = Image.new('L', size)
+    iSharp = iSharpImage.load()
+    image = image.load()
+    
+    tmpX = [0]*9
+    tmpY = [0]*9
+    for i in range(1,h-1):
+        for j in range(1,w-1):
+            for k in range(3):
+                for l in range(3):
+                    tmpX[k*3+l] = image[j-1+l, i-1+k]*arrayX[k*3+l]
+                    tmpY[k*3+l] = image[j-1+l, i-1+k]*arrayY[k*3+l]
+            iSharp[j,i] = abs(sum(tmpX))+abs(sum(tmpY))
+    return iSharpImage
 
 class memoized(object):
     """
@@ -167,3 +229,6 @@ def check_receptor(img,img_pixels, pixels):
         receptor_states = map(lambda x: x / imax, receptor_states)
 
     return receptor_states
+
+
+

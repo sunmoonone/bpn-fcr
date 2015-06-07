@@ -10,8 +10,9 @@ python main.py test 测试bp网络 将包含火情的图片拷贝到danger子目
 python main.py monitor <dir_path> 监控目录，将其中有火情的图片转移的该目录的子目录danger 里
 '''
 import sys
+from gui.main import mainloop
 
-if __name__ == '__main__':
+def cmdmain():
     usage = 'Usage: %s prepare | train | test | monitor <dir_path>' % sys.argv[0]
     if(len(sys.argv) < 2):
         print usage
@@ -31,3 +32,7 @@ if __name__ == '__main__':
         sys.exit(test())
     else:
         print "%.3f" % (2.0/3)
+    
+if __name__ == '__main__':
+    mainloop()
+    
